@@ -33,6 +33,10 @@ This customization is needed on the database initialization stage. If you are us
     -e transactions=1215 \
     sath89/oracle-xe-11g
 
+Run with custom sys password:
+
+    docker run -d -p 8080:8080 -p 1521:1521 -e DEFAULT_SYS_PASS=sYs-p@ssw0rd sath89/oracle-xe-11g
+
 Connect database with following setting:
 
     hostname: localhost
