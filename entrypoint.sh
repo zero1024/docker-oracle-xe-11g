@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Prevent owner issues on mounted folders
+chown -R oracle:dba /docker-entrypoint-initdb.d/
 chown -R oracle:dba /u01/app/oracle
 rm -f /u01/app/oracle/product
 ln -s /u01/app/oracle-product /u01/app/oracle/product
