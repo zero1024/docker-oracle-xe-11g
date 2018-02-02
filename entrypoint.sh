@@ -142,8 +142,6 @@ case "$1" in
 			fi
 
 			printf "Setting up:\nprocesses=$processes\nsessions=$sessions\ntransactions=$transactions\n"
-			echo "If you want to use different parameters set processes, sessions, transactions env variables and consider this formula:"
-			printf "processes=x\nsessions=x*1.1+5\ntransactions=sessions*1.1\n"
 
 			mv /u01/app/oracle-product/11.2.0/xe/dbs /u01/app/oracle/dbs
 			ln -s /u01/app/oracle/dbs /u01/app/oracle-product/11.2.0/xe/dbs

@@ -20,23 +20,15 @@ This customization is needed on the database initialization stage.
     -e transactions=1215 \
     oracle
 
-Run with custom sys password:
-
-    docker run -d -p 1521:1521 -e DEFAULT_SYS_PASS=sYs-p@ssw0rd oracle
-
 Connect database with following setting:
 
     hostname: localhost
     port: 1521
     sid: xe
-    username: system
+    username: system (or sys)
     password: oracle
 
-Password for SYS & SYSTEM:
-
-    oracle
-
-Auto import of sh sql and dmp files
+Initial import of sh sql and dmp files (happens only once)
 
     docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/initdb oracle
 
@@ -47,11 +39,6 @@ Remap several tablespaces to one
 
     docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/initdb - e ${IMPORT_SCHEME_NAME}=tablespace1,tablespace2 oracle
 
-Check database listener status
+Import of sql files (happens every time when needed)
 
-    docker exec oracle lsnrctl status
-    
-Import and export (IMPDP dir = /initdb)
-    
-
-
+    docker run -d -p 1521:1521 -v /my/oracle/init/sql_files:/sql oracle
