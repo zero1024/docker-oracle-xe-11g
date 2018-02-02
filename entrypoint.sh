@@ -6,7 +6,7 @@ mkdir logs
 chown -R oracle:dba /logs
 
 # Prevent owner issues on mounted folders
-chown -R oracle:dba /docker-entrypoint-initdb.d/
+chown -R oracle:dba /initdb.d/
 chown -R oracle:dba /u01/app/oracle
 rm -f /u01/app/oracle/product
 ln -s /u01/app/oracle-product /u01/app/oracle/product
@@ -24,7 +24,7 @@ impdpUserCreation () {
 CREATE USER IMPDP IDENTIFIED BY IMPDP;
 ALTER USER IMPDP ACCOUNT UNLOCK;
 GRANT dba TO IMPDP WITH ADMIN OPTION;
-create or replace directory IMPDP as '/docker-entrypoint-initdb.d/';
+create or replace directory IMPDP as '/initdb.d/';
 exit;
 EOL
     echo "Creating IMPDP user..."
@@ -46,15 +46,26 @@ grant connect, resource to $DUMP_NAME;
 exit;
 EOL
 
-	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /logs/impdp_${DUMP_NAME}_prepare.log
-	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log"
+    REMAP_TABLESPACE=""
+    eval tablespaces='$'$DUMP_NAME
+
+    if [ ! -z "$tablespaces" ] ; then
+        export IFS=","
+        for word in $tablespaces; do
+            REMAP_TABLESPACE="$REMAP_TABLESPACE REMAP_TABLESPACE=$word:$DUMP_NAME"
+        done
+        echo "Tablespace remap rule for $DUMP_NAME - $REMAP_TABLESPACE"
+    fi
+
+	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /initdb.d/${DUMP_NAME}_import_prepare.log
+	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE $REMAP_TABLESPACE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log PARTITION_OPTIONS=merge 2>&1" >/dev/null
 }
 
 impFile() {
 	echo "found file $1"
 	case "$1" in
 		*.sh)     echo "[IMPORT] $0: running $1"; . "$1" ;;
-		*.sql)    echo "[IMPORT] $0: running $1"; echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @$1"; echo ;;
+		*.sql)    echo "[IMPORT] $0: running $1"; echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @$1" > ${1%.sql}_sql_import.log; echo ;;
 		*.dmp)    echo "[IMPORT] $0: running $1"; impdp $1 ;;
 		*)        echo "[IMPORT] $0: ignoring $1" ;;
 	esac
@@ -69,9 +80,10 @@ startDatabase(){
 
 importData(){
 
-    echo "Starting import scripts(*.dmp, *.sql, *.sh) from '/docker-entrypoint-initdb.d':"
+    echo "Starting import scripts(*.dmp, *.sql, *.sh) from '/initdb.d':"
+    echo "Import logs will be available in '/initdb.d'"
 
-    for fn in $(ls -1 /docker-entrypoint-initdb.d/* 2> /dev/null)
+    for fn in $(ls -1 /initdb.d/* 2> /dev/null)
 	do
 		impFile $fn
 	done

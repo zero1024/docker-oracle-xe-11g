@@ -38,17 +38,20 @@ Password for SYS & SYSTEM:
 
 Auto import of sh sql and dmp files
 
-    docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/docker-entrypoint-initdb.d oracle
+    docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/initdb.d oracle
 
 **In case of using DMP imports dump file should be named like ${IMPORT_SCHEME_NAME}.dmp**
 **User credentials for imports are  ${IMPORT_SCHEME_NAME}/${IMPORT_SCHEME_NAME}**
+
+Remap several tablespaces to one
+
+    docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/initdb.d - e ${IMPORT_SCHEME_NAME}=tablespace1,tablespace2 oracle
 
 Check database listener status
 
     docker exec oracle lsnrctl status
     
-Import and export (IMPDP dir = /docker-entrypoint-initdb.d)
+Import and export (IMPDP dir = /initdb.d)
     
-    docker exec oracle impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE nologfile=y
 
 
