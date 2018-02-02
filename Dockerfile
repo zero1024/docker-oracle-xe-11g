@@ -36,6 +36,9 @@ ENV processes 500
 ENV sessions 555
 ENV transactions 610
 
+ENV TZ Europe/Moscow
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 ADD entrypoint.sh /
 ADD healthcheck.sh /
 ENTRYPOINT ["/entrypoint.sh"]
