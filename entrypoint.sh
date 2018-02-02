@@ -6,7 +6,8 @@ mkdir logs
 chown -R oracle:dba /logs
 
 # Prevent owner issues on mounted folders
-chown -R oracle:dba /initdb.d/
+chown -R oracle:dba /initdb/
+chown -R oracle:dba /sql/
 chown -R oracle:dba /u01/app/oracle
 rm -f /u01/app/oracle/product
 ln -s /u01/app/oracle-product /u01/app/oracle/product
@@ -24,7 +25,7 @@ impdpUserCreation () {
 CREATE USER IMPDP IDENTIFIED BY IMPDP;
 ALTER USER IMPDP ACCOUNT UNLOCK;
 GRANT dba TO IMPDP WITH ADMIN OPTION;
-create or replace directory IMPDP as '/initdb.d/';
+create or replace directory IMPDP as '/initdb/';
 exit;
 EOL
     echo "Creating IMPDP user..."
@@ -57,17 +58,21 @@ EOL
         echo "Tablespace remap rule for $DUMP_NAME - $REMAP_TABLESPACE"
     fi
 
-	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /initdb.d/${DUMP_NAME}_import_prepare.log
+	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /initdb/${DUMP_NAME}_import_prepare.log
 	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE $REMAP_TABLESPACE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log PARTITION_OPTIONS=merge 2>&1" >/dev/null
+}
+
+sql() {
+ echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @$1" > ${1%.sql}_sql_import.log
 }
 
 impFile() {
 	echo "found file $1"
 	case "$1" in
-		*.sh)     echo "[IMPORT] $0: running $1"; . "$1" ;;
-		*.sql)    echo "[IMPORT] $0: running $1"; echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @$1" > ${1%.sql}_sql_import.log; echo ;;
-		*.dmp)    echo "[IMPORT] $0: running $1"; impdp $1 ;;
-		*)        echo "[IMPORT] $0: ignoring $1" ;;
+		*.sh)     echo "[IMPORT] running $1"; . "$1" ;;
+		*.sql)    echo "[IMPORT] running $1"; sql "$1" ;;
+		*.dmp)    echo "[IMPORT] running $1"; impdp $1 ;;
+		*)        echo "[IMPORT] ignoring $1" ;;
 	esac
 }
 
@@ -78,14 +83,30 @@ startDatabase(){
    echo
 }
 
-importData(){
+importInitialData(){
 
-    echo "Starting import scripts(*.dmp, *.sql, *.sh) from '/initdb.d':"
-    echo "Import logs will be available in '/initdb.d'"
+    echo "Starting import scripts(*.dmp, *.sql, *.sh) from '/initdb':"
+    echo "Import logs will be available in '/initdb'"
 
-    for fn in $(ls -1 /initdb.d/* 2> /dev/null)
+    for fn in $(ls -1 /initdb/* 2> /dev/null)
 	do
 		impFile $fn
+	done
+
+	echo "Import finished"
+	echo
+
+}
+
+importSqlFiles(){
+
+    echo "Starting import sql scripts from '/sql':"
+    echo "Import logs will be available in '/sql'"
+
+    for fn in $(ls -1 /sql/*.sql 2> /dev/null)
+	do
+	    echo "found file $fn"
+		echo "[IMPORT] running $fn"; sql $fn
 	done
 
 	echo "Import finished"
@@ -147,8 +168,10 @@ case "$1" in
 
 			startDatabase
 			impdpUserCreation
-			importData
+			importInitialData
 		fi
+
+		importSqlFiles
 
         echo "Database started and will be ready within a few seconds (check container health)."
 
