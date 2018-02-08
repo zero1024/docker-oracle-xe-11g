@@ -37,8 +37,13 @@ Initial import of sh sql and dmp files (happens only once)
 
 Remap several tablespaces to one
 
-    docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/initdb - e ${IMPORT_SCHEME_NAME}=tablespace1,tablespace2 oracle
+    docker run -d -p 1521:1521 -v /my/oracle/init/sh_sql_dmp_files:/initdb -e ${IMPORT_SCHEME_NAME}=tablespace1,tablespace2 oracle
 
 Import of sql files (happens every time when needed)
 
     docker run -d -p 1521:1521 -v /my/oracle/init/sql_files:/sql oracle
+    
+Import of sql patches (happens every time when needed)
+
+    docker run -d -p 1521:1521 -v /my/oracle/init/sql_patches:/sql-patches oracle
+    <patch_name>/start.sql

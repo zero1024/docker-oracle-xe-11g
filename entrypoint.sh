@@ -6,8 +6,9 @@ mkdir logs
 chown -R oracle:dba /logs
 
 # Prevent owner issues on mounted folders
-chown -R oracle:dba /initdb/
-chown -R oracle:dba /sql/
+chown -R oracle:dba /initdb/ || :
+chown -R oracle:dba /sql/ || :
+chown -R oracle:dba /sql-patches/ || :
 chown -R oracle:dba /u01/app/oracle
 rm -f /u01/app/oracle/product
 ln -s /u01/app/oracle-product /u01/app/oracle/product
@@ -66,6 +67,12 @@ sql() {
  echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @$1" > ${1%.sql}_sql_import.log
 }
 
+sqlPatch() {
+ cd $1
+ echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @start.sql" > ${1%.sql}_sql_import.log
+ cd ../
+}
+
 impFile() {
 	echo "found file $1"
 	case "$1" in
@@ -107,6 +114,22 @@ importSqlFiles(){
 	do
 	    echo "found file $fn"
 		echo "[IMPORT] running $fn"; sql $fn
+	done
+
+	echo "Import finished"
+	echo
+
+}
+
+importSqlPatches(){
+
+    echo "Starting import sql patches from '/sql-patches':"
+    echo "Import logs will be available in '/sql-patches'"
+
+    for fn in $(ls -1 -d /sql-patches/* 2> /dev/null)
+	do
+	    echo "found patch $fn"
+		echo "[IMPORT] running $fn"; sqlPatch $fn
 	done
 
 	echo "Import finished"
@@ -170,6 +193,7 @@ case "$1" in
 		fi
 
 		importSqlFiles
+		importSqlPatches
 
         echo "Database started and will be ready within a few seconds (check container health)."
 
