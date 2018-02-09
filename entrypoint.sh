@@ -30,7 +30,7 @@ create or replace directory IMPDP as '/initdb/';
 exit;
 EOL
     echo "Creating IMPDP user..."
-	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp_user.sql"  > /logs/impdp_user_creation.log
+	su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp_user.sql"  > /logs/impdp_user_creation.log
 	echo "IMPDP user created."
 	echo 
 }
@@ -59,17 +59,17 @@ EOL
         echo "Tablespace remap rule for $DUMP_NAME - $REMAP_TABLESPACE"
     fi
 
-	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /initdb/${DUMP_NAME}_import_prepare.log
-	su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE $REMAP_TABLESPACE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log PARTITION_OPTIONS=merge 2>&1" >/dev/null
+	su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /initdb/${DUMP_NAME}_import_prepare.log
+	su oracle -c "$ORACLE_HOME/bin/impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE $REMAP_TABLESPACE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log PARTITION_OPTIONS=merge 2>&1" >/dev/null
 }
 
 sql() {
- echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @$1" > ${1%.sql}_sql_import.log
+ echo "exit" | su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @$1" > ${1%.sql}_sql_import.log
 }
 
 sqlPatch() {
  cd $1
- echo "exit" | su oracle -c "NLS_LANG=.$CHARACTER_SET $ORACLE_HOME/bin/sqlplus -S / as sysdba @start.sql" > ${1%.sql}_sql_import.log
+ echo "exit" | su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @start.sql" > ${1%.sql}_sql_import.log
  cd ../
 }
 
@@ -126,7 +126,7 @@ importSqlPatches(){
     echo "Starting import sql patches from '/sql-patches':"
     echo "Import logs will be available in '/sql-patches'"
 
-    for fn in $(ls -1 -d /sql-patches/* 2> /dev/null)
+    for fn in $(ls -1 -d /sql-patches/*/ 2> /dev/null)
 	do
 	    echo "found patch $fn"
 		echo "[IMPORT] running $fn"; sqlPatch $fn
@@ -159,10 +159,6 @@ case "$1" in
 			startDatabase
 		else
 			echo "It's a first start. Database is not initialized. Initializing database."
-
-			if [ -z "$CHARACTER_SET" ]; then
-				export CHARACTER_SET="AL32UTF8"
-			fi
 
 			printf "Setting up:\nprocesses=$processes\nsessions=$sessions\ntransactions=$transactions\n"
 

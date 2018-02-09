@@ -39,6 +39,8 @@ ENV transactions 610
 ENV TZ Europe/Moscow
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+ENV NLS_LANG AMERICAN_AMERICA.AL32UTF8
+
 ADD entrypoint.sh /
 ADD healthcheck.sh /
 ENTRYPOINT ["/entrypoint.sh"]
