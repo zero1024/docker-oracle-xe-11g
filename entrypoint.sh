@@ -60,7 +60,7 @@ EOL
     fi
 
 	su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @/tmp/impdp.sql" > /initdb/${DUMP_NAME}_import_prepare.log
-	su oracle -c "$ORACLE_HOME/bin/impdp IMPDP/IMPDP directory=IMPDP dumpfile=$DUMP_FILE $REMAP_TABLESPACE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log PARTITION_OPTIONS=merge 2>&1" >/dev/null
+	su oracle -c "$ORACLE_HOME/bin/impdp IMPDP/IMPDP transform=SEGMENT_ATTRIBUTES:n:table directory=IMPDP dumpfile=$DUMP_FILE $REMAP_TABLESPACE $IMPDP_OPTIONS logfile=${DUMP_NAME}_import.log PARTITION_OPTIONS=merge 2>&1" >/dev/null
 }
 
 sql() {
