@@ -7,9 +7,8 @@ CHECK=$($ORACLE_HOME/bin/sqlplus -s system/oracle <<END
 END
 )
 
-# Number check
-if ! [ "${CHECK}" -eq "${CHECK}" ] 2>/dev/null; then
-  echo ${CHECK}
+# File check
+if ! [ -f started ] 2>/dev/null; then
   exit 1
 fi
 
