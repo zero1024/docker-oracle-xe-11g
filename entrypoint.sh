@@ -70,7 +70,7 @@ sql() {
 
 sqlPatch() {
  cd $1
- echo "exit" | su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @start.sql"
+ echo "exit" | su oracle -c "$ORACLE_HOME/bin/sqlplus -S / as sysdba @docker.start.sql"
  cd ../
 }
 
